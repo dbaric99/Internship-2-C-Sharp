@@ -4,6 +4,8 @@ using System.Reflection;
 
 //GK, DF, MF, FW - goalkeeper, defender, midfielder, forward
 
+//BUG: when entering 0 sometimes the app doesn't exit on the first input
+
 var matchesInLeague = new Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)>()
 {
     {1, (Team1: "Belgium", Team2: "Canada", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
@@ -46,14 +48,12 @@ do
                     Console.WriteLine("All matches from the group are already played!");
                     break;
                 }
-                Console.WriteLine("MATCH NUM: " + matchInProgress);
-                //TODO: send to method that generates results and then adjust ratings
                 playMatch(players, matchesInLeague, matchInProgress);
                 break;
             }
         case 3:
             {
-                Console.WriteLine("Choice is 3");
+                statistics(players);
                 break;
             }
         case 4:
@@ -210,6 +210,10 @@ Dictionary<string, (string Position, int Rating)> changePlayerRating(Dictionary<
             int newRating = shouldIncrease ?
                 (int)(Math.Round(player.Value.Rating + player.Value.Rating * percentage, MidpointRounding.AwayFromZero))
                 : (int)(Math.Round(player.Value.Rating - player.Value.Rating * percentage, MidpointRounding.AwayFromZero));
+            if (newRating < 1)
+                newRating = 1;
+            else if (newRating > 100)
+                newRating = 100;
             players[player.Key] = (Position: player.Value.Position, Rating: newRating);
         }
     }
@@ -271,6 +275,176 @@ Dictionary<string, (string Position, int Rating)> changePlayerRating(Dictionary<
     }
 
     return (Team1: matchInProgress.Team1, Team2: matchInProgress.Team2, Team1Goals: team1Goals, Team2Goals: team2Goals, Winner: winner, WinnerPoints: winnerPoints, PlayersThatScored: playersThatScored);
+}
+
+/*
+ * Displays statistics menu and return users choice
+*/
+int statisticsMenu()
+{
+    bool success = false;
+    int statisticsChoice = 0;
+
+    do
+    {
+        Console.WriteLine("Print out all the players:\n\t1 - Default\n\t2 - By rating ascending\n\t3 - By rating descending\n\t4 - Filter by name and surname\n\t5 - Filter by rating\n\t6 - Filter by position\n\t7 - Top 11 players (4:3:3 positioning)\n\t8 - Strikers and the amounts of their scored goals\n9 - Print out results of Croatia\n10 - Print out results from all teams\n11 - Print out results table\n0 - Return to main menu\n");
+        Console.Write("Input action: ");
+        success = int.TryParse(Console.ReadLine(), out statisticsChoice);
+        Console.WriteLine("\n");
+    } while (!success);
+
+    return statisticsChoice;
+}
+
+void statistics(Dictionary<string, (string Position, int Rating)> players)
+{
+    Console.Clear();
+
+    int statisticsMenuChoice = 0;
+
+    do
+    {
+        statisticsMenuChoice = statisticsMenu();
+
+        switch (statisticsMenuChoice)
+        {
+            case 1:
+                {
+                    listPlayers(players);
+                    break;
+                }
+            case 2:
+                {
+                    var playersByRatingAsc = players
+                        .OrderBy(p => p.Value.Rating)
+                        .ToDictionary(p => p.Key, p => p.Value);
+                    listPlayers(playersByRatingAsc);
+                    break;
+                }
+            case 3:
+                {
+                    var playersByRatinsDesc = players
+                        .OrderByDescending(p => p.Value.Rating)
+                        .ToDictionary(p => p.Key, p => p.Value);
+                    listPlayers(playersByRatinsDesc);
+                    break;
+                }
+            case 4:
+                {
+                    filterPlayerByName(players);
+                    break;
+                }
+            case 5:
+                {
+                    filterPlayersByRating(players);
+                    break;
+                }
+            case 6:
+                {
+                    filterPlayersByPosition(players);
+                    break;
+                }
+            case 7:
+                {
+                    break;
+                }
+            case 8:
+                {
+                    break;
+                }
+            case 9:
+                {
+                    break;
+                }
+            case 10:
+                {
+                    break;
+                }
+            case 11:
+                {
+                    break;
+                }
+            case 0:
+                {
+                    Console.Clear();
+                    break;
+                }
+            default:
+                {
+                    Console.WriteLine("There is no action for provided input!\n");
+                    break;
+                }
+        }
+
+    } while (statisticsMenuChoice != 0);
+}
+
+/*
+ * Traverses the Dictionary and tries to match the players with user inputted filter,
+ * if a match is found it prints out the position and rating of the matching player
+*/
+void filterPlayerByName(Dictionary<string, (string Position, int Rating)> players)
+{
+    Console.WriteLine("Player name: ");
+    var playersName = Console.ReadLine();
+
+    foreach (var player in players)
+    {
+        if(player.Key.ToLower() == playersName.ToLower().Trim())
+        {
+            Console.WriteLine($"Position: {player.Value.Position} | Rating: {player.Value.Rating}\n");
+            return;
+        }
+    }
+    Console.WriteLine("No matching players found!\n");
+}
+
+/*
+ * Filters the Dictionary and prints out players with matching rating from user input
+*/
+void filterPlayersByRating(Dictionary<string, (string Position, int Rating)> players)
+{
+    bool success = false;
+    int targetedRating = 0;
+
+    do
+    {
+        Console.Write("Player rating: ");
+        success = int.TryParse(Console.ReadLine(), out targetedRating);
+    } while (!success);
+
+    var targetedPlayers = players
+        .Where(p => p.Value.Rating == targetedRating)
+        .ToDictionary(p => p.Key, p => p.Value);
+
+    if(targetedPlayers.Count == 0)
+    {
+        Console.WriteLine("\nThere are no players with targeted rating!\n");
+        return;
+    }
+
+    listPlayers(targetedPlayers);
+}
+
+/*
+ * Filters the Dictionary and prints out players with matching position from user input
+*/
+void filterPlayersByPosition(Dictionary<string, (string Position, int Rating)> players)
+{
+    Console.Write("Players position: ");
+    var targetedPosition = Console.ReadLine();
+
+    var targetedPlayers = players
+        .Where(p => p.Value.Position.ToLower() == targetedPosition.ToLower().Trim())
+        .ToDictionary(p => p.Key, p => p.Value);
+
+    if(targetedPlayers.Count == 0)
+    {
+        Console.WriteLine("\nThere are no players with targeted position!\n");
+        return;
+    }
+
+    listPlayers(targetedPlayers);
 }
 
 /*
