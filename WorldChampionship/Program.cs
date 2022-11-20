@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 
 //BUG: when entering 0 sometimes the app doesn't exit on the first input
 
+//TODO: make this into a function
 var matchesInLeague = new Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)>()
 {
     {1, (Team1: "Belgium", Team2: "Canada", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
@@ -62,7 +63,7 @@ do
             }
         case 4:
             {
-                Console.WriteLine("Choice is 4");
+                players = playerControl(players);
                 break;
             }
         case 0:
@@ -590,14 +591,296 @@ void printGroupsResults(Dictionary<int, (string Team1, string Team2, int Team1Go
     }
 }
 
-void playerControlMenu()
+/*
+ * Displays player control menu and returns user choice
+*/
+int playerControlMenu()
 {
+    bool success = false;
+    int playerControlChoice = 0;
 
+    do
+    {
+        Console.WriteLine("\n1 - Add new player\n2 - Delete a player\n3 - Edit a player\n");
+        Console.Write("Input action: ");
+        success = int.TryParse(Console.ReadLine(), out playerControlChoice);
+        Console.WriteLine("\n");
+    } while (!success);
+
+    return playerControlChoice;
 }
 
-void playerControl()
+Dictionary<string, (string Position, int Rating)> playerControl(Dictionary<string, (string Position, int Rating)> players)
 {
+    Console.Clear();
+    int playerControlMenuChoice = 0;
 
+    do
+    {
+        playerControlMenuChoice = playerControlMenu();
+
+        switch (playerControlMenuChoice)
+        {
+            case 1:
+                {
+                    var playerAdded = addNewPlayer(players);
+                    if (playerAdded != null)
+                    {
+                        Console.WriteLine("\nPlayer successfully added!\n");
+                        players = playerAdded;
+                    }
+                    break;
+                }
+            case 2:
+                {
+                    var playerDeleted = deletePlayer(players);
+                    if(playerDeleted != null)
+                    {
+                        Console.WriteLine("\nPlayer successfully removed!\n");
+                    }
+                    break;
+                }
+            case 3:
+                {
+                    players = editPlayer(players);
+                    break;
+                }
+            case 0:
+                {
+                    Console.Clear();
+                    break;
+                }
+            default:
+                {
+                    Console.WriteLine("There is no action for provided input!\n");
+                    break;
+                }
+        }
+    } while (playerControlMenuChoice != 0);
+
+    return players;
+}
+
+Dictionary<string, (string Position, int Rating)>? addNewPlayer(Dictionary<string, (string Position, int Rating)> allPlayers)
+{
+    int playerRating;
+
+    if(allPlayers.Count > 26)
+    {
+        Console.WriteLine("\nThere is maximum amount of players already!\n");
+        return null;
+    }
+
+    Console.Write("\nInput name of the new player: ");
+    var playerName = Console.ReadLine();
+
+    if (allPlayers.ContainsKey(playerName))
+    {
+        Console.WriteLine("\nPlayer with same name already exists!\n");
+        return null;
+    }
+    else if(playerName.Trim() == "")
+    {
+        Console.WriteLine("\nPlayer name cannot be empty!\n");
+        return null;
+    }
+
+    Console.Write("\nInput player position: ");
+    var playerPosition = Console.ReadLine();
+
+    if(!new string[4] {"GK", "DF", "MF", "FW" }.Contains(playerPosition.ToUpper()))
+    {
+        Console.WriteLine("\nInvalid player position!\n");
+        return null;
+    }
+    else if(playerPosition.Trim() == "")
+    {
+        Console.WriteLine("\nPlayer position cannot be empty!\n");
+        return null;
+    }
+
+    Console.Write("\nInput player rating: ");
+    var success = int.TryParse(Console.ReadLine(), out playerRating);
+
+    if (!success)
+    {
+        Console.WriteLine("\nPlayer rating needs to be a number!\n");
+        return null;
+    }
+    else if(playerRating < 1 || playerRating > 100)
+    {
+        Console.WriteLine("\nPlayer rating needs to be a value in range between 1 and 100!\n");
+        return null;
+    }
+
+    Console.Write($"\nAre you sure you want to add new player: Name: {playerName} | Position: {playerPosition} | Rating: {playerRating} to the list (y/n): ");
+    var shouldAdd = Console.ReadLine().ToLower();
+
+    if(shouldAdd == "y")
+    {
+        players.Add(playerName, (Position: playerPosition, Rating: playerRating));
+        return players;
+    }
+
+    return null;
+}
+
+Dictionary<string, (string Position, int Rating)>? deletePlayer(Dictionary<string, (string Position, int Rating)> players)
+{
+    Console.Write("\nEnter name of a player you want to delete: ");
+    var playerToDelete = Console.ReadLine();
+
+    if (players.Keys.Contains(playerToDelete))
+    {
+        Console.Write($"\nAre you sure you want to delete player: {playerToDelete} (y/n): ");
+        var shouldDelete = Console.ReadLine().ToLower();
+
+        if(shouldDelete == "y")
+        {
+            players.Remove(playerToDelete);
+            return players;
+        }
+    }
+
+    Console.WriteLine($"\nThere is no player: ${playerToDelete} on the team!\n");
+    return null;
+}
+
+int editPlayerMenu()
+{
+    bool success = false;
+    int editPlayerMenuChoice = 0;
+
+    printDividingLine();
+
+    do
+    {
+        Console.WriteLine("\n1 - Edit name and surname of a player\n2 - Edit player position\n3 - Edit player rating\n0 - Return to main menu\n");
+        Console.Write("Input action: ");
+        success = int.TryParse(Console.ReadLine(), out editPlayerMenuChoice);
+        Console.WriteLine("\n");
+    } while (!success);
+
+    return editPlayerMenuChoice;
+}
+
+Dictionary<string, (string Position, int Rating)> editPlayer(Dictionary<string, (string Position, int Rating)> players)
+{
+    Console.Clear();
+
+    int editPlayerMenuChoice = 0;
+
+    do
+    {
+        editPlayerMenuChoice = editPlayerMenu();
+
+        //TODO: function that returns name of players we want to edit
+
+        switch (editPlayerMenuChoice)
+        {
+            case 1:
+                {
+                    players = editPlayerName(players);
+                    break;
+                }
+            case 2:
+                {
+                    players = editPlayerPosition(players);
+                    break;
+                }
+            case 3:
+                {
+                    players = editPlayerRating(players);
+                    break;
+                }
+            case 0:
+                {
+                    Console.Clear();
+                    break;
+                }
+            default:
+                {
+                    Console.WriteLine("There is no action for provided input!\n");
+                    break;
+                }
+        }
+    } while (editPlayerMenuChoice != 0);
+
+    return players;
+}
+
+Dictionary<string, (string Position, int Rating)> editPlayerName(Dictionary<string, (string Position, int Rating)> players)
+{
+    Console.Write("\nEnter name of player whose name you want to edit: ");
+    var playerToEdit = Console.ReadLine();
+
+    if (players.Keys.Contains(playerToEdit))
+    {
+        Console.Write("\nEnter new player name: ");
+        var newName = Console.ReadLine();
+
+        if (players.ContainsKey(newName))
+            Console.WriteLine($"\nPlayer by name {newName} already exists!\n");
+        else
+        {
+            players.Add(playerToEdit, players[playerToEdit]);
+            players.Remove(playerToEdit);
+            Console.WriteLine("\nPlayer name edit successful!\n");
+        }
+    }
+    else
+        Console.WriteLine($"\nPlayer of name {playerToEdit} not found!");
+    return players;
+}
+
+Dictionary<string, (string Position, int Rating)> editPlayerPosition(Dictionary<string, (string Position, int Rating)> players)
+{
+    Console.Write("\nEnter name of player whose name you want to edit: ");
+    var playerToEdit = Console.ReadLine();
+
+    if (players.Keys.Contains(playerToEdit))
+    {
+        Console.Write("\nEnter new player position: ");
+        var newPosition = Console.ReadLine().ToUpper();
+
+        if(!new string[4] {"GK", "DF", "MF", "FW" }.Contains(newPosition))
+            Console.WriteLine("\nPlayer position not valid!\n");
+        else
+            players[playerToEdit] = (Position: newPosition, Rating: players[playerToEdit].Rating);
+    }
+    else
+        Console.WriteLine($"\nPlayer of name {playerToEdit} not found!");
+    return players;
+}
+
+Dictionary<string, (string Position, int Rating)> editPlayerRating(Dictionary<string, (string Position, int Rating)> players)
+{
+    Console.Write("\nEnter name of player whose name you want to edit: ");
+    var playerToEdit = Console.ReadLine();
+
+    if (players.Keys.Contains(playerToEdit))
+    {
+        bool success = false;
+        int newRating = 0;
+        Console.Write("\nEnter new player rating: ");
+        success = int.TryParse(Console.ReadLine(), out newRating);
+
+        if (!success)
+        {
+            Console.WriteLine("\nRating has to be a number!\n");
+        }
+        else if(newRating < 1 || newRating > 100)
+        {
+            Console.WriteLine("\nRating has to be between 1 and 100!\n");
+        }
+        else
+        {
+            players[playerToEdit] = (Position: players[playerToEdit].Position, Rating: newRating);
+        }
+    }
+    else
+        Console.WriteLine($"\nPlayer of name {playerToEdit} not found!");
+    return players;
 }
 
 /*
