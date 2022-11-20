@@ -3,19 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-//BUG: when entering 0 sometimes the app doesn't exit on the first input
-
-//TODO: make this into a function
-var matchesInLeague = new Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)>()
-{
-    {1, (Team1: "Belgium", Team2: "Canada", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
-    {2, (Team1: "Morocco", Team2: "Croatia", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
-    {3, (Team1: "Belgium", Team2: "Morocco", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
-    {4, (Team1: "Croatia", Team2: "Canada", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
-    {5, (Team1: "Croatia", Team2: "Belgium", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
-    {6, (Team1: "Canada", Team2: "Morocco", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())}
-};
-
+var matchesInLeague = initializeMatches();
 int matchInProgress = 0;
 
 var players = assemblePlayersTeam();
@@ -113,8 +101,23 @@ Dictionary<string,(string Position, int Rating)> assemblePlayersTeam()
 }
 
 /* 
- * Used for display of the main menu and repeating it until the user inserts a number of a valid action
- * Returns user input, takes no parameters
+ * Returns dictionary of matches from the league
+*/
+Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)> initializeMatches()
+{
+    return new Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)>()
+    {
+        {1, (Team1: "Belgium", Team2: "Canada", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
+        {2, (Team1: "Morocco", Team2: "Croatia", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
+        {3, (Team1: "Belgium", Team2: "Morocco", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
+        {4, (Team1: "Croatia", Team2: "Canada", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
+        {5, (Team1: "Croatia", Team2: "Belgium", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())},
+        {6, (Team1: "Canada", Team2: "Morocco", Team1Goals: 0, Team2Goals: 0, Winner: "", WinnerPoints: 0, PlayersThatScored: Array.Empty<string>())}
+    };
+}
+
+/* 
+ * Used for display of the main menu and return of user choice
 */
 int mainMenu()
 {
@@ -123,8 +126,14 @@ int mainMenu()
 
     do
     {
-        Console.WriteLine("1 - Training session\n2 - Play a match\n3 - Statistics\n4 - Player menu\n0 - Exit");
+        Console.WriteLine("1 - Training session\n"
+            + "2 - Play a match\n"
+            + "3 - Statistics\n"
+            + "4 - Player menu\n"
+            + "0 - Exit");
+
         Console.Write("Input action: ");
+
         success = int.TryParse(Console.ReadLine(), out choice);
         Console.WriteLine("\n");
     } while (!success);
@@ -134,7 +143,6 @@ int mainMenu()
 
 /*
  * Used for increasing players rating by 0-5% randomly
- * Returns players new rating as int, takes current rating as parameter
 */
 int trainingSession(int currentRating)
 {
@@ -149,7 +157,7 @@ int trainingSession(int currentRating)
 /*
  * Forms a team for a match containing of 1 GK, 4 DF, 3 MF and 3 FW or strikers which are generated randomly,
  * while other players are determined by their rating
- * Returns Dictionary of players that will participate in the game and takes Dictionary of all players as a parameter
+ * Returns Dictionary of players that will participate in the game
 */
 Dictionary<string, (string Position, int Rating)>? formTeam(Dictionary<string, (string Position, int Rating)> players)
 {
@@ -204,7 +212,6 @@ Dictionary<string, (string Position, int Rating)>? formTeam(Dictionary<string, (
 */
 Dictionary<string, (string Position, int Rating)> changePlayerRating(Dictionary<string, (string Position, int Rating)> players, string playerName, int percentageNumber, bool shouldIncrease)
 {
-    //TODO: could use one method to training and increasing the rating after the game
     foreach (var player in players)
     {
         if (player.Key == playerName)
@@ -224,7 +231,7 @@ Dictionary<string, (string Position, int Rating)> changePlayerRating(Dictionary<
 }
 
 /*
- * Randomly generate match result and opponent, raise striker rating by 5% and other players by 2% if the team won
+ * Randomly generate match result and opponent, raise striker rating by 5% and other players by 2% if the team won, and decrease by 2% if they lost
  * Print out the result and save it
  * Max number of matches that can be played are 6
 */
@@ -290,7 +297,20 @@ int statisticsMenu()
 
     do
     {
-        Console.WriteLine("\nPrint out all the players:\n\t1 - Default\n\t2 - By rating ascending\n\t3 - By rating descending\n\t4 - Filter by name and surname\n\t5 - Filter by rating\n\t6 - Filter by position\n\t7 - Top 11 players\n\t8 - Strikers and the amounts of their scored goals\n9 - Print out results of Croatia\n10 - Print out results from all teams\n11 - Print out results table\n0 - Return to main menu\n");
+        Console.WriteLine("\nPrint out all the players:\n"
+            + "\t1 - Default\n"
+            + "\t2 - By rating ascending\n"
+            + "\t3 - By rating descending\n"
+            + "\t4 - Filter by name and surname\n"
+            + "\t5 - Filter by rating\n"
+            + "\t6 - Filter by position\n"
+            + "\t7 - Top 11 players\n"
+            + "\t8 - Strikers and the amounts of their scored goals\n"
+            + "9 - Print out results of Croatia\n"
+            + "10 - Print out results from all teams\n"
+            + "11 - Print out results table\n"
+            + "0 - Return to main menu\n");
+
         Console.Write("Input action: ");
         success = int.TryParse(Console.ReadLine(), out statisticsChoice);
         Console.WriteLine("\n");
@@ -418,17 +438,20 @@ void filterPlayersByRating(Dictionary<string, (string Position, int Rating)> pla
     bool success = false;
     int targetedRating = 0;
 
-    do
+    Console.Write("Player rating: ");
+    success = int.TryParse(Console.ReadLine(), out targetedRating);
+
+    if (!success)
     {
-        Console.Write("Player rating: ");
-        success = int.TryParse(Console.ReadLine(), out targetedRating);
-    } while (!success);
+        Console.WriteLine("\nPlayer rating must be a number!\n");
+        return;
+    }
 
     var targetedPlayers = players
         .Where(p => p.Value.Rating == targetedRating)
         .ToDictionary(p => p.Key, p => p.Value);
 
-    if(targetedPlayers.Count == 0)
+    if (targetedPlayers.Count == 0)
     {
         Console.WriteLine("\nThere are no players with targeted rating!\n");
         return;
@@ -476,7 +499,7 @@ void filterTop11(Dictionary<string, (string Position, int Rating)> players)
 }
 
 /*
- * Traverses Dictionaries for players and matches and counts strikers goals and prints out the data
+ * Traverses Dictionaries for players and counts strikers goals and prints out the data
 */
 void printStrikersAndGoals(Dictionary<string, (string Position, int Rating)> players, Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)> matches, int playedMatches)
 {
@@ -523,6 +546,7 @@ void printTeamResult(Dictionary<int, (string Team1, string Team2, int Team1Goals
         Console.WriteLine("\nCroatia hasn't played any matches yet!\n");
         return;
     }
+    printDividingLine();
     foreach (var match in matches.Take(playedMatches))
     {
         if(match.Value.Team1 == "Croatia" || match.Value.Team2 == "Croatia")
@@ -533,6 +557,7 @@ void printTeamResult(Dictionary<int, (string Team1, string Team2, int Team1Goals
                 Console.Write(player + ", ");
         }
     }
+    printDividingLine();
 }
 
 /*
@@ -545,6 +570,7 @@ void printAllTeamsResults(Dictionary<int, (string Team1, string Team2, int Team1
         Console.WriteLine("\nNo matches played so far!\n");
         return;
     }
+    printDividingLine();
     foreach (var match in matches)
     {
         Console.Write($"\nTeam1: {match.Value.Team1} | Team2: {match.Value.Team2} | Result: {match.Value.Team1Goals} - {match.Value.Team2Goals} | Winner: {match.Value.Winner} | Winner points: {match.Value.WinnerPoints} | Strikers: ");
@@ -552,6 +578,7 @@ void printAllTeamsResults(Dictionary<int, (string Team1, string Team2, int Team1
         foreach (var player in match.Value.PlayersThatScored)
             Console.Write(player + ", ");
     }
+    printDividingLine();
 }
 
 /*
@@ -582,6 +609,7 @@ void printGroupsResults(Dictionary<int, (string Team1, string Team2, int Team1Go
     groupTable.OrderByDescending(g => g.Value.Points)
         .ToDictionary(g => g.Key, g => g.Value);
 
+    printDividingLine();
     int i = 1;
     Console.WriteLine("Place - Name | Points | Goal difference");
     foreach (var group in groupTable)
@@ -589,6 +617,7 @@ void printGroupsResults(Dictionary<int, (string Team1, string Team2, int Team1Go
         Console.WriteLine($"{i} - {group.Key} | Points: {group.Value.Points} | Goal difference: {group.Value.GoalDifference}");
         i++;
     }
+    printDividingLine();
 }
 
 /*
@@ -601,7 +630,10 @@ int playerControlMenu()
 
     do
     {
-        Console.WriteLine("\n1 - Add new player\n2 - Delete a player\n3 - Edit a player\n");
+        Console.WriteLine("\n1 - Add new player\n"
+            + "2 - Delete a player\n"
+            + "3 - Edit a player\n");
+
         Console.Write("Input action: ");
         success = int.TryParse(Console.ReadLine(), out playerControlChoice);
         Console.WriteLine("\n");
@@ -610,6 +642,9 @@ int playerControlMenu()
     return playerControlChoice;
 }
 
+/*
+ * Logic for player CRUD operations
+*/
 Dictionary<string, (string Position, int Rating)> playerControl(Dictionary<string, (string Position, int Rating)> players)
 {
     Console.Clear();
@@ -661,16 +696,21 @@ Dictionary<string, (string Position, int Rating)> playerControl(Dictionary<strin
     return players;
 }
 
+/*
+ * Create new player and add it to the list
+*/
 Dictionary<string, (string Position, int Rating)>? addNewPlayer(Dictionary<string, (string Position, int Rating)> allPlayers)
 {
     int playerRating;
 
+    //no more than 26 players can be on the list
     if(allPlayers.Count > 26)
     {
         Console.WriteLine("\nThere is maximum amount of players already!\n");
         return null;
     }
 
+    //check if the new name is unique
     Console.Write("\nInput name of the new player: ");
     var playerName = Console.ReadLine();
 
@@ -685,6 +725,7 @@ Dictionary<string, (string Position, int Rating)>? addNewPlayer(Dictionary<strin
         return null;
     }
 
+    //check if position entered is a valid one
     Console.Write("\nInput player position: ");
     var playerPosition = Console.ReadLine();
 
@@ -699,6 +740,7 @@ Dictionary<string, (string Position, int Rating)>? addNewPlayer(Dictionary<strin
         return null;
     }
 
+    //check if rating is a number between 1 and 100
     Console.Write("\nInput player rating: ");
     var success = int.TryParse(Console.ReadLine(), out playerRating);
 
@@ -713,6 +755,7 @@ Dictionary<string, (string Position, int Rating)>? addNewPlayer(Dictionary<strin
         return null;
     }
 
+    //user conformation
     Console.Write($"\nAre you sure you want to add new player: Name: {playerName} | Position: {playerPosition} | Rating: {playerRating} to the list (y/n): ");
     var shouldAdd = Console.ReadLine().ToLower();
 
@@ -725,11 +768,15 @@ Dictionary<string, (string Position, int Rating)>? addNewPlayer(Dictionary<strin
     return null;
 }
 
+/*
+ * Delete a player from the list
+*/
 Dictionary<string, (string Position, int Rating)>? deletePlayer(Dictionary<string, (string Position, int Rating)> players)
 {
     Console.Write("\nEnter name of a player you want to delete: ");
     var playerToDelete = Console.ReadLine();
 
+    //user conformation
     if (players.Keys.Contains(playerToDelete))
     {
         Console.Write($"\nAre you sure you want to delete player: {playerToDelete} (y/n): ");
@@ -746,6 +793,9 @@ Dictionary<string, (string Position, int Rating)>? deletePlayer(Dictionary<strin
     return null;
 }
 
+/*
+ * Displays edit menu and returns user choice
+*/
 int editPlayerMenu()
 {
     bool success = false;
@@ -755,7 +805,11 @@ int editPlayerMenu()
 
     do
     {
-        Console.WriteLine("\n1 - Edit name and surname of a player\n2 - Edit player position\n3 - Edit player rating\n0 - Return to main menu\n");
+        Console.WriteLine("\n1 - Edit name and surname of a player\n"
+            + "2 - Edit player position\n"
+            + "3 - Edit player rating\n"
+            + "0 - Return to main menu\n");
+
         Console.Write("Input action: ");
         success = int.TryParse(Console.ReadLine(), out editPlayerMenuChoice);
         Console.WriteLine("\n");
@@ -764,6 +818,9 @@ int editPlayerMenu()
     return editPlayerMenuChoice;
 }
 
+/*
+ * Logic for editing players
+*/
 Dictionary<string, (string Position, int Rating)> editPlayer(Dictionary<string, (string Position, int Rating)> players)
 {
     Console.Clear();
@@ -774,23 +831,24 @@ Dictionary<string, (string Position, int Rating)> editPlayer(Dictionary<string, 
     {
         editPlayerMenuChoice = editPlayerMenu();
 
-        //TODO: function that returns name of players we want to edit
+        Console.Write("\nEnter name of player whose name you want to edit: ");
+        var playerToEdit = Console.ReadLine();
 
         switch (editPlayerMenuChoice)
         {
             case 1:
                 {
-                    players = editPlayerName(players);
+                    players = editPlayerName(players, playerToEdit);
                     break;
                 }
             case 2:
                 {
-                    players = editPlayerPosition(players);
+                    players = editPlayerPosition(players, playerToEdit);
                     break;
                 }
             case 3:
                 {
-                    players = editPlayerRating(players);
+                    players = editPlayerRating(players, playerToEdit);
                     break;
                 }
             case 0:
@@ -809,11 +867,11 @@ Dictionary<string, (string Position, int Rating)> editPlayer(Dictionary<string, 
     return players;
 }
 
-Dictionary<string, (string Position, int Rating)> editPlayerName(Dictionary<string, (string Position, int Rating)> players)
+/*
+ * Edit name of selected player
+*/
+Dictionary<string, (string Position, int Rating)> editPlayerName(Dictionary<string, (string Position, int Rating)> players, string playerToEdit)
 {
-    Console.Write("\nEnter name of player whose name you want to edit: ");
-    var playerToEdit = Console.ReadLine();
-
     if (players.Keys.Contains(playerToEdit))
     {
         Console.Write("\nEnter new player name: ");
@@ -833,11 +891,11 @@ Dictionary<string, (string Position, int Rating)> editPlayerName(Dictionary<stri
     return players;
 }
 
-Dictionary<string, (string Position, int Rating)> editPlayerPosition(Dictionary<string, (string Position, int Rating)> players)
+/*
+ * Edit position of selected player
+*/
+Dictionary<string, (string Position, int Rating)> editPlayerPosition(Dictionary<string, (string Position, int Rating)> players, string playerToEdit)
 {
-    Console.Write("\nEnter name of player whose name you want to edit: ");
-    var playerToEdit = Console.ReadLine();
-
     if (players.Keys.Contains(playerToEdit))
     {
         Console.Write("\nEnter new player position: ");
@@ -853,11 +911,11 @@ Dictionary<string, (string Position, int Rating)> editPlayerPosition(Dictionary<
     return players;
 }
 
-Dictionary<string, (string Position, int Rating)> editPlayerRating(Dictionary<string, (string Position, int Rating)> players)
+/*
+ * Edit rating of selected player
+*/
+Dictionary<string, (string Position, int Rating)> editPlayerRating(Dictionary<string, (string Position, int Rating)> players, string playerToEdit)
 {
-    Console.Write("\nEnter name of player whose name you want to edit: ");
-    var playerToEdit = Console.ReadLine();
-
     if (players.Keys.Contains(playerToEdit))
     {
         bool success = false;
@@ -897,7 +955,7 @@ void listPlayers(Dictionary<string, (string Position, int Rating)> listOfPlayers
 }
 
 /*
- * Prints a dividing line
+ * Prints a dividing line, used for printing matches or players
 */
 void printDividingLine()
 {
