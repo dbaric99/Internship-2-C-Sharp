@@ -1,8 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-
-//GK, DF, MF, FW - goalkeeper, defender, midfielder, forward
+using System.Text.RegularExpressions;
 
 //BUG: when entering 0 sometimes the app doesn't exit on the first input
 
@@ -48,12 +47,17 @@ do
                     Console.WriteLine("All matches from the group are already played!");
                     break;
                 }
-                playMatch(players, matchesInLeague, matchInProgress);
+                var isPlayed = playMatch(players, matchesInLeague, matchInProgress);
+                matchInProgress = (isPlayed == null) ? matchInProgress-- : matchInProgress;
+                if (isPlayed == null)
+                    matchInProgress = matchInProgress == 0 ? 0 : matchInProgress--;
+                else
+                    matchesInLeague[matchInProgress] = ((string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored))isPlayed;
                 break;
             }
         case 3:
             {
-                statistics(players);
+                statistics(players, matchesInLeague, matchInProgress);
                 break;
             }
         case 4:
@@ -103,12 +107,7 @@ Dictionary<string,(string Position, int Rating)> assemblePlayersTeam()
         {"Mario Pašalić", (Position: "MF", Rating: 81)},
         {"Lovro Majer", (Position: "FW", Rating: 80)},
         {"Ante Rebić", (Position: "DF", Rating: 80)},
-        {"Franko Andrijašević", (Position: "MF", Rating: 72)},
-        {"Fran Tudor", (Position: "MF", Rating: 72)},
-        {"Dante Stipica", (Position: "MF", Rating: 71)},
-        {"Ivan Santini", (Position: "FW", Rating: 69)},
-        {"Dario Melnjak", (Position: "GK", Rating: 70)},
-        {"Mato Miloš", (Position: "FW", Rating: 69)}
+        {"Franko Andrijašević", (Position: "MF", Rating: 72)}
     };
 }
 
@@ -151,7 +150,7 @@ int trainingSession(int currentRating)
  * while other players are determined by their rating
  * Returns Dictionary of players that will participate in the game and takes Dictionary of all players as a parameter
 */
-Dictionary<string, (string Position, int Rating)> formTeam(Dictionary<string, (string Position, int Rating)> players)
+Dictionary<string, (string Position, int Rating)>? formTeam(Dictionary<string, (string Position, int Rating)> players)
 {
     var team = new Dictionary<string, (string Position, int Rating)>();
 
@@ -171,19 +170,22 @@ Dictionary<string, (string Position, int Rating)> formTeam(Dictionary<string, (s
     var strikers = players.Where(p => p.Value.Position == "FW")
         .ToDictionary(p => p.Key, p => p.Value);
 
-    //TODO: handle if there are not enough players to form a team
+    //checking if a team can be formed
+    if(goalkeepers.Count < 1 || defenders.Count < 4 || midfielders.Count < 3 || strikers.Count < 3)
+    {
+        Console.WriteLine("\nThere aren't enough players to form a team!\n");
+        return null;
+    }
 
     //adding all the players to the team
-    team.Add(goalkeepers.ElementAt(0).Key, goalkeepers.ElementAt(0).Value);
+    foreach (var goalkeeper in goalkeepers.Take(1))
+        team.Add(goalkeeper.Key, goalkeeper.Value);
 
-    team.Add(defenders.ElementAt(0).Key, defenders.ElementAt(0).Value);
-    team.Add(defenders.ElementAt(1).Key, defenders.ElementAt(1).Value);
-    team.Add(defenders.ElementAt(2).Key, defenders.ElementAt(2).Value);
-    team.Add(defenders.ElementAt(3).Key, defenders.ElementAt(3).Value);
+    foreach (var defender in defenders.Take(4))
+        team.Add(defender.Key, defender.Value);
 
-    team.Add(midfielders.ElementAt(0).Key, midfielders.ElementAt(0).Value);
-    team.Add(midfielders.ElementAt(1).Key, midfielders.ElementAt(1).Value);
-    team.Add(midfielders.ElementAt(2).Key, midfielders.ElementAt(2).Value);
+    foreach (var midfielder in midfielders.Take(3))
+        team.Add(midfielder.Key, midfielder.Value);
 
     var rand = new Random();
     var randomIndices = Enumerable.Range(0, strikers.Count).OrderBy(x => rand.Next()).Take(3).ToList();
@@ -225,12 +227,12 @@ Dictionary<string, (string Position, int Rating)> changePlayerRating(Dictionary<
  * Print out the result and save it
  * Max number of matches that can be played are 6
 */
-(string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored) playMatch(Dictionary<string, (string Position, int Rating)> allPlayers, Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)> matches, int numberOfMatch)
+(string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)? playMatch(Dictionary<string, (string Position, int Rating)> allPlayers, Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)> matches, int numberOfMatch)
 {
     //calls function that forms the team of players that are playing the current match
     var team = formTeam(allPlayers);
-
-    //TODO: check if team has all the players if it doesn't return null
+    if (team == null)
+        return null;
 
     var strikers = allPlayers.Where(p => p.Value.Position == "FW");
     var restOfPlayers = allPlayers.Except(strikers);
@@ -287,7 +289,7 @@ int statisticsMenu()
 
     do
     {
-        Console.WriteLine("Print out all the players:\n\t1 - Default\n\t2 - By rating ascending\n\t3 - By rating descending\n\t4 - Filter by name and surname\n\t5 - Filter by rating\n\t6 - Filter by position\n\t7 - Top 11 players (4:3:3 positioning)\n\t8 - Strikers and the amounts of their scored goals\n9 - Print out results of Croatia\n10 - Print out results from all teams\n11 - Print out results table\n0 - Return to main menu\n");
+        Console.WriteLine("\nPrint out all the players:\n\t1 - Default\n\t2 - By rating ascending\n\t3 - By rating descending\n\t4 - Filter by name and surname\n\t5 - Filter by rating\n\t6 - Filter by position\n\t7 - Top 11 players\n\t8 - Strikers and the amounts of their scored goals\n9 - Print out results of Croatia\n10 - Print out results from all teams\n11 - Print out results table\n0 - Return to main menu\n");
         Console.Write("Input action: ");
         success = int.TryParse(Console.ReadLine(), out statisticsChoice);
         Console.WriteLine("\n");
@@ -296,7 +298,10 @@ int statisticsMenu()
     return statisticsChoice;
 }
 
-void statistics(Dictionary<string, (string Position, int Rating)> players)
+/*
+ * Contains logic for the statistics menu
+*/
+void statistics(Dictionary<string, (string Position, int Rating)> players, Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)> matches, int playedMatches)
 {
     Console.Clear();
 
@@ -346,22 +351,27 @@ void statistics(Dictionary<string, (string Position, int Rating)> players)
                 }
             case 7:
                 {
+                    filterTop11(players);
                     break;
                 }
             case 8:
                 {
+                    printStrikersAndGoals(players, matches, playedMatches);
                     break;
                 }
             case 9:
                 {
+                    printTeamResult(matches, playedMatches);
                     break;
                 }
             case 10:
                 {
+                    printAllTeamsResults(matches, playedMatches);
                     break;
                 }
             case 11:
                 {
+                    printGroupsResults(matches, playedMatches);
                     break;
                 }
             case 0:
@@ -445,6 +455,149 @@ void filterPlayersByPosition(Dictionary<string, (string Position, int Rating)> p
     }
 
     listPlayers(targetedPlayers);
+}
+
+/*
+ * Filters top 11 players
+*/
+void filterTop11(Dictionary<string, (string Position, int Rating)> players)
+{
+    var top11 = players
+        .OrderByDescending(p => p.Value.Rating)
+        .ToDictionary(p => p.Key, p => p.Value);
+
+    if (players.Count == 0)
+        Console.WriteLine("\nThere are no players on the list!\n");
+    else if (players.Count > 11)
+        top11 = (Dictionary<string, (string Position, int Rating)>)top11.Take(11);
+
+    listPlayers(players);
+}
+
+/*
+ * Traverses Dictionaries for players and matches and counts strikers goals and prints out the data
+*/
+void printStrikersAndGoals(Dictionary<string, (string Position, int Rating)> players, Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)> matches, int playedMatches)
+{
+    var strikersAndGoals = new Dictionary<string, int>();
+    var strikers = players
+        .Where(p => p.Value.Position == "FW")
+        .ToDictionary(p => p.Key, p => p.Value);
+
+    if(playedMatches == 0)
+    {
+        Console.WriteLine("\nThere are no matches played yet!\n");
+        return;
+    }
+
+    if(strikers.Count == 0)
+    {
+        Console.WriteLine("\nThere are no strikers!\n");
+        return;
+    }
+
+    foreach (var striker in strikers)
+    {
+        var numOfGoals = 0;
+
+        foreach(var match in matches.Take(playedMatches))
+        {
+            if(match.Value.PlayersThatScored.Length != 0)
+                numOfGoals += match.Value.PlayersThatScored.Where(p => p == striker.Key).Count();
+        }
+        strikersAndGoals.Add(striker.Key, numOfGoals);
+    }
+
+    foreach (var sg in strikersAndGoals)
+        Console.WriteLine($"Striker: {sg.Key} | Goals scored: {sg.Value}\n");
+}
+
+/*
+ * Displays results of matches Croatia has played in
+*/
+void printTeamResult(Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)> matches, int playedMatches)
+{
+    if(playedMatches < 2)
+    {
+        Console.WriteLine("\nCroatia hasn't played any matches yet!\n");
+        return;
+    }
+    foreach (var match in matches.Take(playedMatches))
+    {
+        if(match.Value.Team1 == "Croatia" || match.Value.Team2 == "Croatia")
+        {
+            Console.Write($"\nTeam1: {match.Value.Team1} | Team2: {match.Value.Team2} | Result: {match.Value.Team1Goals} - {match.Value.Team2Goals} | Winner: {match.Value.Winner} | Winner points: {match.Value.WinnerPoints} | Strikers: ");
+
+            foreach (var player in match.Value.PlayersThatScored)
+                Console.Write(player + ", ");
+        }
+    }
+}
+
+/*
+ * Displays results of all matches played so far
+*/
+void printAllTeamsResults(Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)> matches, int playedMatches)
+{
+    if(playedMatches == 0)
+    {
+        Console.WriteLine("\nNo matches played so far!\n");
+        return;
+    }
+    foreach (var match in matches)
+    {
+        Console.Write($"\nTeam1: {match.Value.Team1} | Team2: {match.Value.Team2} | Result: {match.Value.Team1Goals} - {match.Value.Team2Goals} | Winner: {match.Value.Winner} | Winner points: {match.Value.WinnerPoints} | Strikers: ");
+
+        foreach (var player in match.Value.PlayersThatScored)
+            Console.Write(player + ", ");
+    }
+}
+
+/*
+ * Display current ratings of all teams played so far
+*/
+void printGroupsResults(Dictionary<int, (string Team1, string Team2, int Team1Goals, int Team2Goals, string Winner, int WinnerPoints, string[] PlayersThatScored)> matches, int playedMatches)
+{
+    var groupTable = new Dictionary<string, (int Points, int GoalDifference)>()
+    {
+        {"Belgium", (Points: 0, GoalDifference: 0)},
+        {"Canada", (Points: 0, GoalDifference: 0)},
+        {"Croatia", (Points: 0, GoalDifference: 0)},
+        {"Morocco", (Points: 0, GoalDifference: 0)},
+    };
+
+    foreach (var match in matches.Take(playedMatches))
+    {
+        int currentPoints = groupTable[match.Value.Winner].Points;
+        int currentGoalDifference = groupTable[match.Value.Winner].GoalDifference;
+
+        int newGoalDifference = match.Value.Winner == match.Value.Team1
+            ? match.Value.Team1Goals - match.Value.Team2Goals
+            : match.Value.Team2Goals - match.Value.Team1Goals;
+
+        groupTable[match.Value.Winner] = (Points: currentPoints + match.Value.WinnerPoints, GoalDifference: currentGoalDifference + newGoalDifference);
+    }
+
+    groupTable.OrderByDescending(g => g.Value.Points)
+        .ToDictionary(g => g.Key, g => g.Value);
+
+    int i = 1;
+    Console.WriteLine("Place - Name | Points | Goal difference");
+    foreach (var group in groupTable)
+    {
+        Console.WriteLine($"{i} - {group.Key} | Points: {group.Value.Points} | Goal difference: {group.Value.GoalDifference}");
+        i++;
+    }
+}
+
+void playerControlMenu()
+{
+
+}
+
+void playerControl()
+{
+
 }
 
 /*
